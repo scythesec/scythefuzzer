@@ -33,14 +33,19 @@ EOF
 echo -e "${RESET}"
 
 # =========================
-# Argument check
+# Input handling (CLI + interactive)
 # =========================
 if [[ -z "$1" ]]; then
-    echo -e "${RED}Usage: ./scythefuzzer.sh <domain | file>${RESET}"
+    read -p "Enter target domain or file: " INPUT
+else
+    INPUT="$1"
+fi
+
+if [[ -z "$INPUT" ]]; then
+    echo -e "${RED}[ERROR] No input provided.${RESET}"
     exit 1
 fi
 
-INPUT="$1"
 echo -e "${GREEN}[INFO] Target: $INPUT${RESET}"
 
 # =========================
