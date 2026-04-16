@@ -80,10 +80,60 @@ Each run generates a directory:
 `live_urls.txt`: Reachable endpoints
 
 🔥 High-Value Targets
-idor_candidates.txt	Test authorization flaws (IDOR)
-ssrf_redirect_candidates.txt	Test SSRF & open redirect vectors
-api_candidates.txt	API endpoints for deeper testing
-sensitive_actions.txt	Business logic abuse targets
+`idor_candidates.txt`: Test authorization flaws (IDOR)
+`ssrf_redirect_candidates.txt`: Test SSRF & open redirect vectors
+`api_candidates.txt`: API endpoints for deeper testing
+`sensitive_actions.txt`: Business logic abuse targets
+
+---
+## Recommended Workflow
+
+Run `./scythefuzzer.sh`
+
+Import `live_urls.txt` into Burp Suite
+
+Focus on high-value lists
+
+## 🔓 IDOR Testing
+
+Modify parameters like:
+`id=`
+`user=`
+`account=`
+
+Test horizontal and vertical access control
+
+## 🌐 SSRF / Open Redirect
+
+Inject payloads such as:
+`http://127.0.0.1`
+`http://169.254.169.254`
+
+Burp Collaborator / Interactsh
+
+## 🔁 Business Logic Testing
+
+Target endpoints like:
+`/reset`
+`/export`
+`/confirm`
+Replay requests
+Remove or manipulate tokens
+
+---
+## ⚠️ Disclaimer
+
+This tool is intended for:
+
+- Authorized security testing
+  
+- Bug bounty programs
+  
+- Educational purposes
+
+Do NOT use this tool on systems you do not have permission to test.
+
+The author is not responsible for any misuse or damage caused.
 
 
 
