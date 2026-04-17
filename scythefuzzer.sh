@@ -98,7 +98,7 @@ echo -e "${GREEN}[INFO] URLs found: $(wc -l < "$URLS")${RESET}"
 echo -e "${GREEN}[INFO] Domains found: $(wc -l < "$DOMAINS")${RESET}"
 
 # =========================
-# STEP 1 - GAU (FIXED)
+# STEP 1 - GAU
 # =========================
 echo -e "${GREEN}[INFO] Collecting URLs (wayback)...${RESET}"
 
@@ -125,7 +125,12 @@ fi
 echo -e "${GREEN}[INFO] Total URLs collected: $(wc -l < "$GAU_FILE")${RESET}"
 
 # =========================
-# Scope Filter (UPDATED)
+# CLEAN JUNK (NEW)
+# =========================
+grep -Ev '\.(jpg|jpeg|png|gif|webp|css|js|svg|ico|woff|woff2|ttf)(\?|$)' "$GAU_FILE" > tmp && mv tmp "$GAU_FILE"
+
+# =========================
+# Scope Filter (FIXED)
 # =========================
 read -p "Filter only target domain? (y/n): " SCOPE
 
@@ -139,7 +144,15 @@ if [[ "$SCOPE" == "y" ]]; then
     > "$OUTSCOPE"
 
     while read -r url; do
-        host=$(echo "$url" | awk -F/ '{print $3}')
+        # Proper host extraction
+        if [[ "$url" == http* ]]; then
+            host=$(echo "$url" | awk -F/ '{print $3}')
+        else
+            host="$url"
+        fi
+
+        # Remove port if present
+        host=$(echo "$host" | sed 's/:.*//')
 
         if [[ "$host" == "$INPUT" || "$host" == *".$INPUT" ]]; then
             echo "$url" >> "$INSCOPE"
@@ -151,8 +164,12 @@ if [[ "$SCOPE" == "y" ]]; then
     echo -e "${GREEN}[INFO] In-scope URLs: $(wc -l < "$INSCOPE")${RESET}"
     echo -e "${YELLOW}[INFO] Out-of-scope URLs: $(wc -l < "$OUTSCOPE")${RESET}"
 
-    # 🔥 CRITICAL: Continue ONLY with in-scope
-    cp "$INSCOPE" "$GAU_FILE"
+    # Safe fallback (NEW)
+    if [ -s "$INSCOPE" ]; then
+        cp "$INSCOPE" "$GAU_FILE"
+    else
+        echo -e "${RED}[WARNING] No in-scope URLs found, skipping filter.${RESET}"
+    fi
 fi
 
 # =========================
