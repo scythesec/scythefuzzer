@@ -130,47 +130,9 @@ echo -e "${GREEN}[INFO] Total URLs collected: $(wc -l < "$GAU_FILE")${RESET}"
 grep -Ev '\.(jpg|jpeg|png|gif|webp|css|js|svg|ico|woff|woff2|ttf)(\?|$)' "$GAU_FILE" > tmp && mv tmp "$GAU_FILE"
 
 # =========================
-# Scope Filter (FIXED)
+# Process URLs (FIXED)
 # =========================
-read -p "Filter only target domain? (y/n): " SCOPE
-
-if [[ "$SCOPE" == "y" ]]; then
-    echo -e "${GREEN}[INFO] Splitting in-scope and out-of-scope URLs...${RESET}"
-
-    INSCOPE="$OUTPUT_DIR/in_scope_urls.txt"
-    OUTSCOPE="$OUTPUT_DIR/out_scope_urls.txt"
-
-    > "$INSCOPE"
-    > "$OUTSCOPE"
-
-    while read -r url; do
-        # Proper host extraction
-        if [[ "$url" == http* ]]; then
-            host=$(echo "$url" | awk -F/ '{print $3}')
-        else
-            host="$url"
-        fi
-
-        # Remove port if present
-        host=$(echo "$host" | sed 's/:.*//')
-
-        if [[ "$host" == "$INPUT" || "$host" == *".$INPUT" ]]; then
-            echo "$url" >> "$INSCOPE"
-        else
-            echo "$url" >> "$OUTSCOPE"
-        fi
-    done < "$GAU_FILE"
-
-    echo -e "${GREEN}[INFO] In-scope URLs: $(wc -l < "$INSCOPE")${RESET}"
-    echo -e "${YELLOW}[INFO] Out-of-scope URLs: $(wc -l < "$OUTSCOPE")${RESET}"
-
-    # Safe fallback (NEW)
-    if [ -s "$INSCOPE" ]; then
-        cp "$INSCOPE" "$GAU_FILE"
-    else
-        echo -e "${RED}[WARNING] No in-scope URLs found, skipping filter.${RESET}"
-    fi
-fi
+echo -e "${YELLOW}[INFO] Processing all URLs...${RESET}"
 
 # =========================
 # STEP 2 - FILTER PARAMS
