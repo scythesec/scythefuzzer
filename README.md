@@ -49,14 +49,22 @@ Install dependencies:
 go install github.com/lc/gau/v2/cmd/gau@latest
 go install github.com/projectdiscovery/httpx/cmd/httpx@latest
 pip install uro
-
 ```
+
+---
+## Installation
+Clone the repository and navigate into it
+
+`git clone https://github.com/scythesec/scythefuzzer.git`
+
+`cd scythefuzzer`
+
 Make the script executable
 ```bash
 chmod +x scythefuzzer.sh
 ```
 ---
-🚀 Usage
+## 🚀 Usage
 
 Single target
 `./scythefuzzer.sh example.com`
@@ -65,7 +73,7 @@ Multiple targets
 `./scythefuzzer.sh domains.txt`
 
 ---
-📂 Output
+## 📂 Output
 
 Each run generates a directory:
 `scythe_output_<timestamp>/`
