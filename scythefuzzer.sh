@@ -125,17 +125,34 @@ fi
 echo -e "${GREEN}[INFO] Total URLs collected: $(wc -l < "$GAU_FILE")${RESET}"
 
 # =========================
-# Scope Filter (FIXED)
+# Scope Filter (UPDATED)
 # =========================
 read -p "Filter only target domain? (y/n): " SCOPE
 
 if [[ "$SCOPE" == "y" ]]; then
-    echo -e "${GREEN}[INFO] Applying scope filter...${RESET}"
+    echo -e "${GREEN}[INFO] Splitting in-scope and out-of-scope URLs...${RESET}"
 
-    grep -E "^https?://([a-zA-Z0-9.-]+\.)?$INPUT" "$GAU_FILE" > "$GAU_FILE.tmp"
-    mv "$GAU_FILE.tmp" "$GAU_FILE"
+    INSCOPE="$OUTPUT_DIR/in_scope_urls.txt"
+    OUTSCOPE="$OUTPUT_DIR/out_scope_urls.txt"
 
-    echo -e "${GREEN}[INFO] Scoped URLs: $(wc -l < "$GAU_FILE")${RESET}"
+    > "$INSCOPE"
+    > "$OUTSCOPE"
+
+    while read -r url; do
+        host=$(echo "$url" | awk -F/ '{print $3}')
+
+        if [[ "$host" == "$INPUT" || "$host" == *".$INPUT" ]]; then
+            echo "$url" >> "$INSCOPE"
+        else
+            echo "$url" >> "$OUTSCOPE"
+        fi
+    done < "$GAU_FILE"
+
+    echo -e "${GREEN}[INFO] In-scope URLs: $(wc -l < "$INSCOPE")${RESET}"
+    echo -e "${YELLOW}[INFO] Out-of-scope URLs: $(wc -l < "$OUTSCOPE")${RESET}"
+
+    # 🔥 CRITICAL: Continue ONLY with in-scope
+    cp "$INSCOPE" "$GAU_FILE"
 fi
 
 # =========================
