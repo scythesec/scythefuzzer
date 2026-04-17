@@ -66,10 +66,14 @@ chmod +x scythefuzzer.sh
 ---
 ## 🚀 Usage
 
-Single target
+Interactive shell:
+
+`./scythefuzzer.sh` -> `"Enter target domain or file: example.txt`
+
+Single target:
 `./scythefuzzer.sh example.com`
 
-Multiple targets
+Multiple targets:
 `./scythefuzzer.sh domains.txt`
 
 ---
