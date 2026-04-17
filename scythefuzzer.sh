@@ -33,7 +33,7 @@ EOF
 echo -e "${RESET}"
 
 # =========================
-# Input handling (CLI + interactive)
+# Input handling
 # =========================
 if [[ -z "$1" ]]; then
     read -p "Enter target domain or file: " INPUT
@@ -49,10 +49,8 @@ fi
 echo -e "${GREEN}[INFO] Target: $INPUT${RESET}"
 
 # =========================
-# Check dependencies
+# Dependencies
 # =========================
-echo -e "${GREEN}[INFO] Checking dependencies...${RESET}"
-
 REQUIRED_TOOLS=("gau" "uro" "httpx")
 
 for tool in "${REQUIRED_TOOLS[@]}"; do
@@ -100,56 +98,48 @@ echo -e "${GREEN}[INFO] URLs found: $(wc -l < "$URLS")${RESET}"
 echo -e "${GREEN}[INFO] Domains found: $(wc -l < "$DOMAINS")${RESET}"
 
 # =========================
-# STEP 1 - URL Collection
+# STEP 1 - GAU (FIXED)
 # =========================
 echo -e "${GREEN}[INFO] Collecting URLs (wayback)...${RESET}"
 
 > "$GAU_FILE"
 
-if [ -s "$DOMAINS" ]; then
-    while read -r domain; do
-        echo "[INFO] gau -> $domain"
-
-        RESULT=$(timeout 20 gau --providers wayback "$domain" 2>/dev/null)
-
-        if [ -n "$RESULT" ]; then
-            echo "$RESULT" >> "$GAU_FILE"
-        else
-            echo "[WARNING] No data for $domain"
-        fi
-
-    done < "$DOMAINS"
-fi
+while read -r domain; do
+    echo "[INFO] gau -> $domain"
+    timeout 20 gau --providers wayback "$domain" 2>/dev/null >> "$GAU_FILE"
+done < "$DOMAINS"
 
 # Add provided URLs
 if [ -s "$URLS" ]; then
     cat "$URLS" >> "$GAU_FILE"
 fi
 
-# Deduplicate
 sort -u "$GAU_FILE" -o "$GAU_FILE"
 
 # Fallback
 if [ ! -s "$GAU_FILE" ]; then
-    echo -e "${YELLOW}[WARNING] No URLs found, using fallback...${RESET}"
+    echo -e "${YELLOW}[WARNING] No URLs from gau, using fallback...${RESET}"
     echo "https://$INPUT" > "$GAU_FILE"
 fi
 
 echo -e "${GREEN}[INFO] Total URLs collected: $(wc -l < "$GAU_FILE")${RESET}"
 
 # =========================
-# Optional Scope Filtering
+# Scope Filter (FIXED)
 # =========================
 read -p "Filter only target domain? (y/n): " SCOPE
 
 if [[ "$SCOPE" == "y" ]]; then
-    grep "$INPUT" "$GAU_FILE" > "$GAU_FILE.tmp"
+    echo -e "${GREEN}[INFO] Applying scope filter...${RESET}"
+
+    grep -E "^https?://([a-zA-Z0-9.-]+\.)?$INPUT" "$GAU_FILE" > "$GAU_FILE.tmp"
     mv "$GAU_FILE.tmp" "$GAU_FILE"
+
     echo -e "${GREEN}[INFO] Scoped URLs: $(wc -l < "$GAU_FILE")${RESET}"
 fi
 
 # =========================
-# STEP 2 - Parameter Filtering
+# STEP 2 - FILTER PARAMS
 # =========================
 echo -e "${GREEN}[INFO] Filtering parameterized URLs...${RESET}"
 
@@ -157,8 +147,12 @@ grep -E '\?[^=]+=.*' "$GAU_FILE" | uro | sort -u > "$FILTERED"
 
 echo -e "${GREEN}[INFO] Parameterized URLs: $(wc -l < "$FILTERED")${RESET}"
 
+# Debug
+echo "[DEBUG] Sample URLs:"
+head -n 5 "$GAU_FILE"
+
 # =========================
-# STEP 3 - Live Check
+# STEP 3 - LIVE CHECK
 # =========================
 echo -e "${GREEN}[INFO] Checking live URLs...${RESET}"
 
@@ -167,11 +161,11 @@ httpx -silent -threads 100 -rate-limit 200 < "$FILTERED" > "$LIVE"
 echo -e "${GREEN}[INFO] Live URLs: $(wc -l < "$LIVE")${RESET}"
 
 # =========================
-# STEP 4 - Intelligence Extraction
+# STEP 4 - TARGET EXTRACTION
 # =========================
 echo -e "${GREEN}[INFO] Extracting high-value targets...${RESET}"
 
-grep -Ei 'id=|user=|account=|profile=|uid=|customer=' "$LIVE" | sort -u > "$IDOR"
+grep -Ei '(^|[?&])(id|user|account|profile|uid|customer|userid|accountid|orderid|owner|uuid)=' "$LIVE" | sort -u > "$IDOR"
 
 grep -Ei 'url=|redirect=|next=|return=|dest=|callback=' "$LIVE" | sort -u > "$SSRF"
 
@@ -180,7 +174,7 @@ grep -Ei '/api|/v[0-9]/|graphql' "$LIVE" | sort -u > "$API"
 grep -Ei 'delete|update|reset|export|confirm|token|password' "$LIVE" | sort -u > "$SENSITIVE"
 
 # =========================
-# Results
+# RESULTS
 # =========================
 echo ""
 echo -e "${GREEN}[DONE] Results saved in: $OUTPUT_DIR${RESET}"
